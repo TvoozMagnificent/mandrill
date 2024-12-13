@@ -1,0 +1,27 @@
+number = 1;
+digits = 1;
+next = 10;
+while (1) {
+  if (number == next) {
+    digits = digits + 1; 
+    next = next * 10;
+  } else {}
+  copy = number; 
+  sum = 0; 
+  while (copy > 0) {
+    digit = copy % 10; 
+    power = 1;
+    i = 0;
+    while (i < digits) {
+      power = power * digit;
+      i = i + 1;
+    }
+    sum = sum + power; 
+    copy = copy / 10;
+  }
+  if (sum == number) {
+    write = number;
+    put = 10;
+  } else {}
+  number = number + 1;
+}
