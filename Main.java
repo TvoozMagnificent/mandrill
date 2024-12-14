@@ -3,8 +3,8 @@ import java.util.*;
 import java.util.Scanner;
 
 class Reader {
-  public static String read() throws IOException {
-    InputStreamReader reader = new FileReader("program.man"); StringWriter stringWriter = new StringWriter(); char[] buffer = new char[1024]; int bytesRead; 
+  public static String read(String filename) throws IOException {
+    InputStreamReader reader = new FileReader(filename); StringWriter stringWriter = new StringWriter(); char[] buffer = new char[1024]; int bytesRead; 
     while ((bytesRead = reader.read(buffer)) != -1) stringWriter.write(buffer, 0, bytesRead); return stringWriter.toString(); } }
 
 abstract class Token { public int type = -1; public boolean equals(Token other) { return type == other.type; } }
@@ -110,10 +110,11 @@ class Parser {
   private Expr parseSubsubchunk()                                                                                                                 throws IllegalArgumentException
   { if (peek() instanceof Identifier) return parseVar(); if (peek() instanceof Literal) return new Number(((Literal) get()).value); 
   if (get() instanceof LParen) { Expr expr = parseExpr(); consume(new RParen()); return expr; } throw new IllegalArgumentException(); }
+  private Expr parseAtom()                                                                                                                        throws IllegalArgumentException
+  { if (peek() instanceof Identifier) return new Variable(((Identifier) get()).name); if (peek() instanceof Literal) return new Number(((Literal) get()).value); 
+  if (get() instanceof LParen) { Expr expr = parseExpr(); consume(new RParen()); return expr; } throw new IllegalArgumentException(); }
   private Var parseVar()                                                                                                                          throws IllegalArgumentException
-  { Var var = new Variable(((Identifier) get()).name); while (peek() instanceof At) { get(); var = new Reference(var, parseSubsubchunk()); } return var; } }
+  { Var var = new Variable(((Identifier) get()).name); while (peek() instanceof At) { get(); var = new Reference(var, parseAtom()); } return var; } }
 
 public class Main {
-  public static void main(String[] args) throws IOException, IllegalArgumentException {
-    ArrayList<Token> t = (new Tokenizer(Reader.read())).getTokens(); 
-    (new Parser(t)).parse().execute(new HashMap<String, Integer>()); } }
+  public static void main(String[] args) throws IOException, IllegalArgumentException { (new Parser((new Tokenizer(Reader.read(args[0]))).getTokens())).parse().execute(new HashMap<String, Integer>()); } }
