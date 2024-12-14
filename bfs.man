@@ -1,0 +1,65 @@
+\\\\\\\\\\\\\\\\\\\\\
+
+Allocation: 
+
+`maze @x @y` stores the maze.
+`visited @x @y` stores whether the cell is visited. 
+`queue @i @p` stores the coordinates of the queue. 
+`start` and `end` are the start and end of the queue.
+`parent @x @y @p` stores the parent of (x, y). 
+
+Sample Input:
+
+10 10
+##########
+#...#....#
+#.#...####
+##..##...#
+#..#...#.#
+#....##..#
+######..##
+#......#.#
+#..##....#
+##########
+
+\\\\\\\\\\\\\\\\\\\\\
+
+\ get maze \
+m = read; n = read; 
+i = 0; while ( i < m ) { j = 0; while ( j < n ) { maze @i @j = get; j = j + 1; } i = i + 1; }
+\ initialize queue \
+queue @0 @'X' = 1; queue @0 @'Y' = 1; end = 1; flag = 1;
+while ( start * flag < end * flag ) { x = queue @start @'X'; y = queue @start @'Y'; visited @x @y = 1;
+  if ( x * y == (m-2) * (n-2) ) { flag = 0; } else {}
+  newx = x + 1; newy = y;
+  \ for each unvisited neighbor add it to the queue \
+  if ( (maze @x @y == '#') + (visited @newx @newy) ) {} else {
+    queue @end @'X' = newx; queue @end @'Y' = newy; 
+    parent @newx @newy @'X' = x; parent @newx @newy @'Y' = y; end = end + 1;
+  }
+  newx = x - 1; newy = y;
+  if ( (maze @x @y == '#') + (visited @newx @newy) ) {} else {
+    queue @end @'X' = newx; queue @end @'Y' = newy; 
+    parent @newx @newy @'X' = x; parent @newx @newy @'Y' = y; end = end + 1;
+  }
+  newx = x; newy = y + 1;
+  if ( (maze @x @y == '#') + (visited @newx @newy) ) {} else {
+    queue @end @'X' = newx; queue @end @'Y' = newy; 
+    parent @newx @newy @'X' = x; parent @newx @newy @'Y' = y; end = end + 1;
+  }
+  newx = x; newy = y - 1;
+  if ( (maze @x @y == '#') + (visited @newx @newy) ) {} else {
+    queue @end @'X' = newx; queue @end @'Y' = newy; 
+    parent @newx @newy @'X' = x; parent @newx @newy @'Y' = y; end = end + 1;
+  }
+  start = start + 1;
+}
+\ update maze \
+x = m - 2; y = n - 2;
+while ( x + y > 0 ) {
+  maze @x @y = 'x';
+  nextx = parent @x @y @'X'; nexty = parent @x @y @'Y'; 
+  x = nextx; y = nexty;
+}
+\ print maze \
+i = 0; while ( i < m ) { j = 0; while ( j < n ) { put = maze @i @j; j = j + 1; } put = 10; i = i + 1; }
