@@ -35,7 +35,7 @@ class Tokenizer {
     if (curr == '{' ) return new LBrace(); if (curr == '}') return new RBrace(); if (curr == '(') return new LParen(); if (curr == ')') return new RParen(); if (curr == ';') return new Semicolon();
     if ("    +-*/%".indexOf(curr) > 0) return new Operator("   +-*/%".indexOf(curr)); if (curr == '@') return new At(); 
     if (curr == '<' ) return new Operator(condconsume('=') ? 9 : 8); if (curr == '>') return new Operator(condconsume('=') ? 11 : 12); if (curr == '!') { consume('='); return new Operator(13); }
-    if (curr == '=' ) return condconsume('=') ? new Operator(10) : new Assignment(); return null; }
+    if (curr == '=' ) return condconsume('=') ? new Operator(10) : new Assignment(); if (curr == '\\') { while (get() != '\\'); } return null; }
   private Token matchLiteral()    { int    num  = 0 ; while (" 1234567890"                .indexOf(peek()) > 0) num   = num * 10 + (get() - '0'); return new Literal   (num ); }
   private Token matchIdentifier() { String name = ""; while (" qwertyuiopasdfghjklzxcvbnm".indexOf(peek()) > 0) name += get();                    return new Identifier(name); } }
 
