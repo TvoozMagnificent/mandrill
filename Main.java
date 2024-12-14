@@ -11,12 +11,10 @@ abstract class Token { public int type = -1; public boolean equals(Token other) 
 class Identifier extends Token { public String name;  public Identifier(String id) { type = 0; name  = id; } public boolean equals(Identifier other) { return name.equals(other.name ); } }
 class Literal    extends Token { public int    value; public Literal   (int    id) { type = 1; value = id; } public boolean equals(Literal    other) { return value ==    other.value ; } }
 class Operator   extends Token { public int    kind;  public Operator  (int    id) { type = 2; kind  = id; } public boolean equals(Operator   other) { return kind  ==    other.kind  ; } }
-class Assignment extends Token { public Assignment() { type = 3; } }
-class LBrace     extends Token { public LBrace()     { type = 4; } }
-class RBrace     extends Token { public RBrace()     { type = 5; } }
-class LParen     extends Token { public LParen()     { type = 6; } }
-class RParen     extends Token { public RParen()     { type = 7; } }
-class Semicolon  extends Token { public Semicolon()  { type = 8; } }
+class Assignment extends Token { public Assignment() { type = 3; } }        class LBrace     extends Token { public LBrace()     { type = 4; } }
+class RBrace     extends Token { public RBrace()     { type = 5; } }        class LParen     extends Token { public LParen()     { type = 6; } }
+class RParen     extends Token { public RParen()     { type = 7; } }        class Semicolon  extends Token { public Semicolon()  { type = 8; } }
+class At         extends Token { public At()         { type = 9; } }
 
 class Tokenizer {
   private int pointer = 0; private String string; private ArrayList<Token> tokens = new ArrayList<Token>(); 
@@ -35,7 +33,7 @@ class Tokenizer {
     if (curr == '\'') { if (peek() != '\\') { char value = get(); consume('\''); return new Literal((int)value); } get(); 
       int v = 0; if (peek() == 'n') v = 10; if (peek() == '\\') v = 92; if (peek() == '\'') v = 39; if (v == 0) throw new IllegalArgumentException(); get(); consume('\''); return new Literal(v); }
     if (curr == '{' ) return new LBrace(); if (curr == '}') return new RBrace(); if (curr == '(') return new LParen(); if (curr == ')') return new RParen(); if (curr == ';') return new Semicolon();
-    if ("    +-*/%".indexOf(curr) > 0) return new Operator("   +-*/%".indexOf(curr));
+    if ("    +-*/%".indexOf(curr) > 0) return new Operator("   +-*/%".indexOf(curr)); if (curr == '@') return new At(); 
     if (curr == '<' ) return new Operator(condconsume('=') ? 9 : 8); if (curr == '>') return new Operator(condconsume('=') ? 11 : 12); if (curr == '!') { consume('='); return new Operator(13); }
     if (curr == '=' ) return condconsume('=') ? new Operator(10) : new Assignment(); return null; }
   private Token matchLiteral()    { int    num  = 0 ; while (" 1234567890"                .indexOf(peek()) > 0) num   = num * 10 + (get() - '0'); return new Literal   (num ); }
@@ -59,13 +57,21 @@ class Ge  extends BinaryOperator { public Ge (Expr left, Expr right) { super(lef
 class Eq  extends BinaryOperator { public Eq (Expr left, Expr right) { super(left, right); } protected int calc(int left, int right) { return left == right ? 1 : 0; } }
 class Ne  extends BinaryOperator { public Ne (Expr left, Expr right) { super(left, right); } protected int calc(int left, int right) { return left != right ? 1 : 0; } }
 class Number extends Expr { private int value; public Number(int value) { this.value = value; } public int evaluate(HashMap<String, Integer> values) { return value; } }
-class Variable extends Expr { private static Scanner scanner = new Scanner(System.in); private String name; public Variable(String name) { this.name = name; } 
-  public int evaluate(HashMap<String, Integer> values) {
-  if (name.equals("read")) return scanner.nextInt(); if (name.equals("get")) { String s = scanner.findInLine("."); return s != null ? (int) s.charAt(0) : 0; } return values.getOrDefault(name, 0); } }
+abstract class Var extends Expr { abstract protected String getName(HashMap<String, Integer> values); }
+class Variable extends Var {
+  private static Scanner scanner = new Scanner(System.in); private static String buffer = ""; private static int bufferIndex = 0; private String name;
+  public Variable(String name) { this.name = name; }
+  public String getName(HashMap<String, Integer> values) { return name; }
+  public int evaluate(HashMap<String, Integer> values)
+    { if (name.equals("read")) return scanner.nextInt();
+    if (name.equals("get")) { while (bufferIndex >= buffer.length()) { buffer = scanner.nextLine(); bufferIndex = 0; } return (int) buffer.charAt(bufferIndex++); } return values.getOrDefault(name, 0); } }
+class Reference extends Var { private Var base; private Expr ref; public Reference(Var base, Expr ref) { this.base = base; this.ref = ref; }
+  public String getName(HashMap<String, Integer> values) { return base.getName(values) + " " + ref.evaluate(values); }
+  public int evaluate(HashMap<String, Integer> values) { return values.getOrDefault(getName(values), 0); } }
 class Equals extends Stmt { 
-  private String var; private Expr expr; public Equals(String var, Expr expr) { this.var = var; this.expr = expr; }
+  private Var var; private Expr expr; public Equals(Var var, Expr expr) { this.var = var; this.expr = expr; }
   public void execute(HashMap<String, Integer> values) { int value = expr.evaluate(values); 
-  if (var.equals("write")) System.out.print(value); if (var.equals("put")) System.out.print((char) value); values.put(var, value); } }
+  if (var.getName(values).equals("write")) System.out.print(value); if (var.getName(values).equals("put")) System.out.print((char) value); values.put(var.getName(values), value); } }
 class If extends Stmt {
   private Expr cond; private Block t, f; public If(Expr condition, Block t, Block f) { cond = condition; this.t = t; this.f = f; }
   public void execute(HashMap<String, Integer> values) { (cond.evaluate(values) != 0 ? t : f).execute(values); } }
@@ -85,12 +91,13 @@ class Parser {
   private Block parseBlock()                                                                                                                      throws IllegalArgumentException
   { ArrayList<Stmt> stmts = new ArrayList<Stmt>(); while (true) { Stmt stmt = parseStmt(); if (stmt == null) return new Block(stmts); stmts.add(stmt); } }
   private Stmt parseStmt()                                                                                                                        throws IllegalArgumentException
-  { Token token = peek(); if (!(token instanceof Identifier)) return null; get(); String name = ((Identifier) token).name;
-    if (name.equals("while")) { consume(new LParen()); Expr cond = parseExpr(); consume(new RParen()); consume(new LBrace()); Block b = parseBlock(); consume(new RBrace()); return new While(cond, b); }
-    if (name.equals("if")) {
+  { Token token = peek(); if (!(token instanceof Identifier)) return null; String name = ((Identifier) token).name;
+    if (name.equals("while"))
+    { get(); consume(new LParen()); Expr cond = parseExpr(); consume(new RParen()); consume(new LBrace()); Block b = parseBlock(); consume(new RBrace()); return new While(cond, b); }
+    if (name.equals("if")) { get(); 
       consume(new LParen()); Expr cond = parseExpr(); consume(new RParen()); consume(new LBrace()); Block l = parseBlock(); consume(new RBrace()); 
       consume(new Identifier("else")); consume(new LBrace()); Block r = parseBlock(); consume(new RBrace()); return new If(cond, l, r);
-    } consume(new Assignment()); Expr expr = parseExpr(); consume(new Semicolon()); return new Equals(name, expr); }
+    } Var var = parseVar(); consume(new Assignment()); Expr expr = parseExpr(); consume(new Semicolon()); return new Equals(var, expr); }
   private Expr parseExpr()                                                                                                                        throws IllegalArgumentException
   { Expr l = parseChunk(); if (peek() instanceof Operator && ((Operator) peek()).kind > 7) { int kind = ((Operator) get()).kind; Expr r = parseChunk();
     if (kind<9) return new Lt(l, r); if (kind<10) return new Le(l, r); if (kind<11) return new Eq(l, r); if (kind<12) return new Ge(l, r); if (kind<13) return new Gt(l, r); return new Ne(l,r); } return l; }
@@ -101,8 +108,10 @@ class Parser {
   { Expr l = parseSubsubchunk(); while (peek() instanceof Operator && ((Operator) peek()).kind < 8 && ((Operator) peek()).kind > 4) { int p = ((Operator) get()).kind; Expr r = parseSubsubchunk();
     l = p < 6 ? new Mul(l, r) : p < 7 ? new Div(l, r) : new Mod(l, r); } return l; }
   private Expr parseSubsubchunk()                                                                                                                 throws IllegalArgumentException
-  { if (peek() instanceof Identifier) return new Variable(((Identifier) get()).name); if (peek() instanceof Literal) return new Number(((Literal) get()).value); 
-  throw new IllegalArgumentException(); } }
+  { if (peek() instanceof Identifier) return parseVar(); if (peek() instanceof Literal) return new Number(((Literal) get()).value); 
+  if (get() instanceof LParen) { Expr expr = parseExpr(); consume(new RParen()); return expr; } throw new IllegalArgumentException(); }
+  private Var parseVar()                                                                                                                          throws IllegalArgumentException
+  { Var var = new Variable(((Identifier) get()).name); while (peek() instanceof At) { get(); var = new Reference(var, parseSubsubchunk()); } return var; } }
 
 public class Main {
   public static void main(String[] args) throws IOException, IllegalArgumentException {
