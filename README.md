@@ -1,4 +1,4 @@
-Sample Output:
+Sample Output for `program.man`:
 
 ```
 1
