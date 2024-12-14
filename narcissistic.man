@@ -1,15 +1,16 @@
 number = 1;
-digits = 1;
+digits = 1; \ instead of counting digits every time, we track digits dynamically. \
 next = 10;
 while (1) {
-  if (number == next) {
+  if (number == next) { \ new digit \
     digits = digits + 1; 
     next = next * 10;
   } else {}
   copy = number; 
   sum = 0; 
-  while (copy > 0) {
+  while (copy > 0) { \ iterate through each digit \
     digit = copy % 10; 
+    \ calculate power \
     power = 1;
     i = 0;
     while (i < digits) {
@@ -19,6 +20,7 @@ while (1) {
     sum = sum + power; 
     copy = copy / 10;
   }
+  \ (conditional) output \
   if (sum == number) {
     write = number;
     put = 10;
