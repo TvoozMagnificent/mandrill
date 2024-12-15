@@ -64,7 +64,7 @@ class Variable extends Var {
   public String getName(HashMap<String, Integer> values) { return name; }
   public int evaluate(HashMap<String, Integer> values)
     { if (name.equals("read")) return scanner.nextInt();
-    if (name.equals("get")) { while (bufferIndex >= buffer.length()) { buffer = scanner.nextLine(); bufferIndex = 0; } return (int) buffer.charAt(bufferIndex++); } return values.getOrDefault(name, 0); } }
+    if (name.equals("get")) { while (bufferIndex >= buffer.length()) { buffer = scanner.nextLine(); bufferIndex = 0; } a = (int) buffer.charAt(bufferIndex++); return a != 32 ? a : evaluate(values); } return values.getOrDefault(name, 0); } }
 class Reference extends Var { private Var base; private Expr ref; public Reference(Var base, Expr ref) { this.base = base; this.ref = ref; }
   public String getName(HashMap<String, Integer> values) { return base.getName(values) + " " + ref.evaluate(values); }
   public int evaluate(HashMap<String, Integer> values) { return values.getOrDefault(getName(values), 0); } }
