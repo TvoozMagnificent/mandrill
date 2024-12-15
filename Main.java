@@ -64,7 +64,7 @@ class Variable extends Var {
   public String getName(HashMap<String, Integer> values) { return name; }
   public int evaluate(HashMap<String, Integer> values)
     { if (name.equals("read")) return scanner.nextInt();
-    if (name.equals("get")) { while (bufferIndex >= buffer.length()) { buffer = scanner.nextLine(); bufferIndex = 0; } a = (int) buffer.charAt(bufferIndex++); return a != 32 ? a : evaluate(values); } return values.getOrDefault(name, 0); } }
+    if (name.equals("get")) { while (bufferIndex >= buffer.length()) { buffer = scanner.nextLine(); bufferIndex = 0; } int a = (int) buffer.charAt(bufferIndex++); return a != 32 ? a : evaluate(values); } return values.getOrDefault(name, 0); } }
 class Reference extends Var { private Var base; private Expr ref; public Reference(Var base, Expr ref) { this.base = base; this.ref = ref; }
   public String getName(HashMap<String, Integer> values) { return base.getName(values) + " " + ref.evaluate(values); }
   public int evaluate(HashMap<String, Integer> values) { return values.getOrDefault(getName(values), 0); } }
@@ -96,6 +96,7 @@ class Parser {
     { get(); consume(new LParen()); Expr cond = parseExpr(); consume(new RParen()); consume(new LBrace()); Block b = parseBlock(); consume(new RBrace()); return new While(cond, b); }
     if (name.equals("if")) { get(); 
       consume(new LParen()); Expr cond = parseExpr(); consume(new RParen()); consume(new LBrace()); Block l = parseBlock(); consume(new RBrace()); 
+      if (!peek().equals(new Identifier("else"))) return new If(cond, l, new Block(new ArrayList<Stmt>()));
       consume(new Identifier("else")); consume(new LBrace()); Block r = parseBlock(); consume(new RBrace()); return new If(cond, l, r);
     } Var var = parseVar(); consume(new Assignment()); Expr expr = parseExpr(); consume(new Semicolon()); return new Equals(var, expr); }
   private Expr parseExpr()                                                                                                                        throws IllegalArgumentException
