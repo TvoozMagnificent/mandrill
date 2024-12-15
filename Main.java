@@ -15,6 +15,8 @@ class Assignment extends Token { public Assignment() { type = 3; } }        clas
 class RBrace     extends Token { public RBrace()     { type = 5; } }        class LParen     extends Token { public LParen()     { type = 6; } }
 class RParen     extends Token { public RParen()     { type = 7; } }        class Semicolon  extends Token { public Semicolon()  { type = 8; } }
 class At         extends Token { public At()         { type = 9; } }
+class Increment  extends Token { public Increment()  { type = 10; } }
+class Decrement  extends Token { public Decrement()  { type = 11; } }
 
 class Tokenizer {
   private int pointer = 0; private String string; private ArrayList<Token> tokens = new ArrayList<Token>(); 
@@ -33,6 +35,7 @@ class Tokenizer {
     if (curr == '\'') { if (peek() != '\\') { char value = get(); consume('\''); return new Literal((int)value); } get(); 
       int v = 0; if (peek() == 'n') v = 10; if (peek() == '\\') v = 92; if (peek() == '\'') v = 39; if (v == 0) throw new IllegalArgumentException(); get(); consume('\''); return new Literal(v); }
     if (curr == '{' ) return new LBrace(); if (curr == '}') return new RBrace(); if (curr == '(') return new LParen(); if (curr == ')') return new RParen(); if (curr == ';') return new Semicolon();
+    if (curr == '+' && peek() == '+') { get(); return new Increment(); } if (curr == '-' && peek() == '-') { get(); return new Decrement(); }
     if ("    +-*/%".indexOf(curr) > 0) return new Operator("   +-*/%".indexOf(curr)); if (curr == '@') return new At(); 
     if (curr == '<' ) return new Operator(condconsume('=') ? 9 : 8); if (curr == '>') return new Operator(condconsume('=') ? 11 : 12); if (curr == '!') { consume('='); return new Operator(13); }
     if (curr == '=' ) return condconsume('=') ? new Operator(10) : new Assignment(); if (curr == '\\') { while (get() != '\\'); } return null; }
@@ -98,7 +101,10 @@ class Parser {
       consume(new LParen()); Expr cond = parseExpr(); consume(new RParen()); consume(new LBrace()); Block l = parseBlock(); consume(new RBrace()); 
       if (!peek().equals(new Identifier("else"))) return new If(cond, l, new Block(new ArrayList<Stmt>()));
       consume(new Identifier("else")); consume(new LBrace()); Block r = parseBlock(); consume(new RBrace()); return new If(cond, l, r);
-    } Var var = parseVar(); consume(new Assignment()); Expr expr = parseExpr(); consume(new Semicolon()); return new Equals(var, expr); }
+    } Var var = parseVar(); 
+    if (peek() instanceof Increment) { get(); consume(new Semicolon()); return new Equals(var, new Add(var, new Number(1))); }
+    if (peek() instanceof Decrement) { get(); consume(new Semicolon()); return new Equals(var, new Sub(var, new Number(1))); }
+    consume(new Assignment()); Expr expr = parseExpr(); consume(new Semicolon()); return new Equals(var, expr); }
   private Expr parseExpr()                                                                                                                        throws IllegalArgumentException
   { Expr l = parseChunk(); if (peek() instanceof Operator && ((Operator) peek()).kind > 7) { int kind = ((Operator) get()).kind; Expr r = parseChunk();
     if (kind<9) return new Lt(l, r); if (kind<10) return new Le(l, r); if (kind<11) return new Eq(l, r); if (kind<12) return new Ge(l, r); if (kind<13) return new Gt(l, r); return new Ne(l,r); } return l; }
